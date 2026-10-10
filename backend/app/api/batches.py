@@ -33,6 +33,10 @@ def upload_batch(
         "settlements": settlements.file.read(),
         "bank_transactions": bank_transactions.file.read(),
     }
+    for name, content in files.items():
+        if len(content) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=413, detail=f"File {name} exceeds 5MB limit")
+            
     records_by_kind, errors = ingestion.ingest_batch_files(files)
     if errors:
         raise HTTPException(status_code=422, detail={"message": "Upload failed", "errors": errors[:50]})

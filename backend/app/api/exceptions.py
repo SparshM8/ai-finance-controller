@@ -240,6 +240,11 @@ def _resolve(db: Session, exc: models.ExceptionRecord, new_status: str, user: mo
     if exc.status in ("RESOLVED", "REJECTED", "OVERRIDDEN"):
         raise HTTPException(status_code=409, detail=f"Exception already {exc.status}")
     old_status = exc.status
+    
+    # Maker-Checker Workflow
+    if user.role == "analyst" and exc.severity == "HIGH" and new_status in ("RESOLVED", "OVERRIDDEN"):
+        new_status = "PENDING_APPROVAL"
+        
     exc.status = new_status
     exc.resolved_by = user.email
     exc.resolved_at = datetime.now(timezone.utc)

@@ -183,6 +183,8 @@ def _reconcile_order(
                       "Order exists with no payment record.",
                       "REQUIRES_REVIEW", actual=Decimal("0.00"))
 
+    # Sort payments so successful ones are picked as primary, not refunded ones.
+    payments = sorted(payments, key=lambda p: 1 if str(p.get("status", "")).lower() == "refunded" else 0)
     primary = payments[0]
     result.payment_id = str(primary.get("payment_id", ""))
     result.payment_date = primary.get("payment_date")
@@ -210,8 +212,9 @@ def _reconcile_order(
 
     # --- partial payment -------------------------------------------------
     if total_paid < expected - eps:
+        pct = (total_paid / expected * 100) if expected > Decimal("0.00") else Decimal("0.00")
         return settle("REVIEW_REQUIRED", "PARTIAL_PAYMENT", "PARTIAL_PAYMENT", 0.90,
-                      f"Payment covers only {total_paid / expected * 100:.0f}% of the order amount "
+                      f"Payment covers only {pct:.0f}% of the order amount "
                       f"({_fmt(total_paid)} of {_fmt(expected)}); no second payment found.",
                       "REQUIRES_REVIEW", actual=total_paid)
 

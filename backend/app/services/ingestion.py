@@ -33,7 +33,10 @@ def parse_amount(value: Any) -> Decimal | None:
     if cleaned in ("", "-", "."):
         return None
     try:
-        return Decimal(cleaned).quantize(Decimal("0.01"))
+        parsed = Decimal(cleaned).quantize(Decimal("0.01"))
+        if parsed < 0:
+            return None
+        return parsed
     except InvalidOperation:
         return None
 
