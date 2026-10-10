@@ -200,6 +200,64 @@ def analyze_exception(
     return AnalysisOut(**analysis.as_dict())
 
 
+class DraftEmailOut(BaseModel):
+    subject: str
+    body: str
+
+@router.post("/{exception_id}/draft_email", response_model=DraftEmailOut)
+def draft_email(
+    exception_id: int,
+    user: models.User = Depends(require_roles(*VIEW_ROLES)),
+    db: Session = Depends(get_db),
+) -> DraftEmailOut:
+    """Generate a professional customer-facing email to resolve an exception."""
+    exc = _get_exception(db, exception_id)
+    rec = db.query(models.Reconciliation).filter_by(id=exc.reconciliation_id).first()
+    
+    # We create a simple prompt for the LLM to draft an email
+    prompt = f"""
+    You are a professional Finance Controller. Draft an email to the customer regarding a payment discrepancy.
+    Order ID: {rec.order_id}
+    Order Amount: {rec.expected_amount} {rec.currency}
+    Actual Paid: {rec.actual_amount} {rec.currency}
+    Discrepancy: {rec.difference} {rec.currency}
+    Issue Type: {exc.type}
+    Issue Description: {exc.description}
+    
+    Please provide ONLY the email content in the following format:
+    SUBJECT: [Subject here]
+    BODY:
+    [Body here]
+    """
+    
+    client = _llm_client()
+    if not client:
+        return DraftEmailOut(
+            subject=f"Action Required: Payment discrepancy for Order {rec.order_id}",
+            body=f"Dear Customer,\n\nWe noticed a discrepancy of {rec.difference} {rec.currency} for your recent order {rec.order_id}. Please review this and let us know.\n\nThanks,\nFinance Team"
+        )
+        
+    try:
+        resp = client.chat.completions.create(
+            model=settings.ai_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        content = resp.choices[0].message.content.strip()
+        lines = content.split('\n')
+        subject = "Payment Discrepancy"
+        body = content
+        for idx, line in enumerate(lines):
+            if line.upper().startswith("SUBJECT:"):
+                subject = line[8:].strip()
+                body = "\n".join(lines[idx+1:]).replace("BODY:", "").strip()
+                break
+                
+        return DraftEmailOut(subject=subject, body=body)
+    except Exception as e:
+        return DraftEmailOut(subject="Error", body=str(e))
+
+
 @router.post("/{exception_id}/approve", response_model=ExceptionOut)
 def approve_exception(
     exception_id: int,

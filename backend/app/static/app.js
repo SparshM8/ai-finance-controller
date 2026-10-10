@@ -90,7 +90,7 @@ async function exceptions() {
   if ($("exception-status").value) params.set("status", $("exception-status").value);
   const data = await api(`/api/exceptions?${params}`);
   table("exception-table", ["Case", "Type / severity", "Description", "Status", "Actions"], data.items.map(e => {
-    let actions = `<button data-record="${e.reconciliation_id}" class="secondary">Details</button><button data-analyze="${e.id}" class="secondary">Analyze</button>`;
+    let actions = `<button data-record="${e.reconciliation_id}" class="secondary">Details</button><button data-analyze="${e.id}" class="secondary">Analyze</button><button data-draftemail="${e.id}" class="secondary">Draft Email</button>`;
     if (canWrite() && !["RESOLVED", "REJECTED", "OVERRIDDEN"].includes(e.status)) {
       actions += `<button data-review="approve" data-id="${e.id}">Approve</button><button data-review="reject" data-id="${e.id}" class="secondary">Reject</button>`;
       if (["admin", "finance_controller"].includes(state.user.role)) actions += `<button data-review="override" data-id="${e.id}" class="secondary">Override</button>`;
@@ -189,6 +189,12 @@ $("workspace").addEventListener("click", event => {
   const button = event.target.closest("button"); if (!button) return;
   if (button.dataset.record) busy(button, async () => showDetails("Transaction details", await api(`/api/reconciliations/${button.dataset.record}`)));
   if (button.dataset.analyze) busy(button, async () => showDetails("Exception analysis — recommendation only", await api(`/api/exceptions/${button.dataset.analyze}/analyze`, {method: "POST"})));
+  if (button.dataset.draftemail) busy(button, async () => {
+    const email = await api(`/api/exceptions/${button.dataset.draftemail}/draft_email`, {method: "POST"});
+    $("detail-title").textContent = "Draft Customer Email";
+    $("detail-body").innerHTML = `<div style="background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border);"><strong style="color: var(--primary);">Subject:</strong> ${escapeHtml(email.subject)}<hr style="border-color: var(--border); margin: 12px 0;"><div style="white-space: pre-wrap; font-family: monospace;">${escapeHtml(email.body)}</div></div>`;
+    $("detail").showModal();
+  });
   if (button.dataset.review) {
     const comment = window.prompt(`Reason for ${button.dataset.review} (recorded in the audit trail):`);
     if (comment === null) return;

@@ -21,6 +21,11 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(30), default="analyst")  # admin|controller|analyst|viewer
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[str] = mapped_column(String(255))
+
 
 class Batch(Base):
     __tablename__ = "batches"

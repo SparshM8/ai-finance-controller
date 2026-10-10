@@ -43,6 +43,18 @@ def run_batch_reconciliation(
     batch.status = "PROCESSING"
     db.commit()
 
+    if config is None:
+        from decimal import Decimal
+        rows = db.query(models.SystemSetting).all()
+        config_data = {}
+        for r in rows:
+            config_data[r.key] = r.value
+        config = ReconciliationConfig(
+            high_value_threshold=Decimal(config_data.get("high_value_threshold", "50000.00")),
+            bank_delay_window_days=int(config_data.get("bank_delay_window_days", "7")),
+            amount_eps=Decimal(config_data.get("amount_eps", "1.00"))
+        )
+
     orders = [o.__dict__ for o in db.query(models.Order).filter_by(batch_id=batch.id).all()]
     payments = [p.__dict__ for p in db.query(models.Payment).filter_by(batch_id=batch.id).all()]
     settlements = [s.__dict__ for s in db.query(models.Settlement).filter_by(batch_id=batch.id).all()]
