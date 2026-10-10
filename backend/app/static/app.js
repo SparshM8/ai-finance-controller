@@ -1,6 +1,7 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
 const state = { token: sessionStorage.getItem("finance-token"), user: null, offset: 0, total: 0, tab: "transactions" };
+const charts = {};
 const escapeHtml = (value) => String(value ?? "—").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const number = (value) => new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(value);
 const canWrite = () => ["admin", "finance_controller", "analyst"].includes(state.user?.role);
@@ -44,6 +45,34 @@ async function summary() {
   const data = await api("/api/dashboard/summary");
   const cards = [["Transactions", number(data.total_transactions)], ["Match rate", `${(data.match_rate * 100).toFixed(1)}%`], ["Under review / unresolved", `${data.review} / ${data.unresolved}`], ["At-risk value", formatMoney(data.at_risk_value)], ["Total order value", formatMoney(data.total_value)], ["Reconciled receipts", formatMoney(data.reconciled_value)], ["High-value review flags", number(data.high_value_review_count)], ["Average confidence", data.avg_ai_confidence === null ? "—" : `${(data.avg_ai_confidence * 100).toFixed(1)}%`]];
   $("metrics").innerHTML = cards.map(([name, value]) => `<div class="metric"><span>${escapeHtml(name)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+  drawCharts(data);
+}
+function drawCharts(data) {
+  if (!window.Chart) return;
+  Chart.defaults.color = '#94a3b8';
+  Chart.defaults.font.family = 'Inter, sans-serif';
+  if (charts.exception) charts.exception.destroy();
+  if (charts.status) charts.status.destroy();
+  const ctxE = $('exceptionChart').getContext('2d');
+  const labelsE = Object.keys(data.exception_breakdown);
+  const dataE = Object.values(data.exception_breakdown);
+  charts.exception = new Chart(ctxE, {
+    type: 'doughnut',
+    data: {
+      labels: labelsE.length ? labelsE : ["No Exceptions"],
+      datasets: [{ data: dataE.length ? dataE : [1], backgroundColor: ['#f87171', '#fbbf24', '#38bdf8', '#818cf8', '#34d399', '#334155'], borderWidth: 0, hoverOffset: 4 }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+  });
+  const ctxS = $('statusChart').getContext('2d');
+  charts.status = new Chart(ctxS, {
+    type: 'bar',
+    data: {
+      labels: ['Matched', 'Review Required', 'Unresolved'],
+      datasets: [{ label: 'Transactions', data: [data.matched, data.review, data.unresolved], backgroundColor: ['#34d399', '#fbbf24', '#f87171'], borderRadius: 4 }]
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(51, 65, 85, 0.3)' } }, x: { grid: { display: false } } } }
+  });
 }
 async function transactions() {
   const params = new URLSearchParams({limit: "50", offset: String(state.offset)});

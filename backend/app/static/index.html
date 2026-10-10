@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI Finance Controller</title>
   <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -23,6 +24,10 @@
     <div id="workspace" hidden>
       <div class="toolbar"><span id="identity"></span><button id="refresh" class="secondary">Refresh</button><button id="load-demo" data-write>Load demo dataset</button><button id="logout" class="secondary">Sign out</button></div>
       <section aria-label="Reconciliation metrics" id="metrics" class="metrics"></section>
+      <div class="chart-container" style="display: flex; gap: 24px; margin-top: 24px; max-height: 350px;">
+        <div class="panel" style="flex: 1; margin: 0; display: flex; flex-direction: column; align-items: center;"><h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Exception Breakdown</h3><canvas id="exceptionChart"></canvas></div>
+        <div class="panel" style="flex: 2; margin: 0; display: flex; flex-direction: column; align-items: center;"><h3 style="margin-bottom: 12px; color: var(--text-muted); font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Transactions by Status</h3><canvas id="statusChart"></canvas></div>
+      </div>
       <p class="muted">Metrics cover all batches. Review decisions close exceptions; they do not change the engine's financial findings. Values are source amounts, not currency-converted totals.</p>
       <nav aria-label="Workspace views">
         <button data-tab="transactions" aria-pressed="true">Transactions</button><button data-tab="exceptions" aria-pressed="false">Exceptions</button><button data-tab="batches" aria-pressed="false">Batches & upload</button><button data-tab="assistant" aria-pressed="false">Finance Q&A</button><button data-tab="audit" aria-pressed="false">Audit trail</button>
