@@ -113,9 +113,9 @@ class DashboardSummary(BaseModel):
     review: int
     unresolved: int
     match_rate: float
-    total_value: float
-    reconciled_value: float
-    at_risk_value: float
+    total_value: dict[str, float]
+    reconciled_value: dict[str, float]
+    at_risk_value: dict[str, float]
     exception_breakdown: dict[str, int]
     high_value_review_count: int
     avg_ai_confidence: float | None

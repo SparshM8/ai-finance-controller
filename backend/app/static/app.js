@@ -40,8 +40,9 @@ function showDetails(title, data) {
   $("detail").showModal();
 }
 async function summary() {
+  const formatMoney = (obj) => Object.entries(obj || {}).map(([c, v]) => `${number(v)} ${c}`).join(" + ") || "0";
   const data = await api("/api/dashboard/summary");
-  const cards = [["Transactions", number(data.total_transactions)], ["Match rate", `${(data.match_rate * 100).toFixed(1)}%`], ["Under review / unresolved", `${data.review} / ${data.unresolved}`], ["At-risk value", number(data.at_risk_value)], ["Total order value", number(data.total_value)], ["Reconciled receipts", number(data.reconciled_value)], ["High-value review flags", number(data.high_value_review_count)], ["Average confidence", data.avg_ai_confidence === null ? "—" : `${(data.avg_ai_confidence * 100).toFixed(1)}%`]];
+  const cards = [["Transactions", number(data.total_transactions)], ["Match rate", `${(data.match_rate * 100).toFixed(1)}%`], ["Under review / unresolved", `${data.review} / ${data.unresolved}`], ["At-risk value", formatMoney(data.at_risk_value)], ["Total order value", formatMoney(data.total_value)], ["Reconciled receipts", formatMoney(data.reconciled_value)], ["High-value review flags", number(data.high_value_review_count)], ["Average confidence", data.avg_ai_confidence === null ? "—" : `${(data.avg_ai_confidence * 100).toFixed(1)}%`]];
   $("metrics").innerHTML = cards.map(([name, value]) => `<div class="metric"><span>${escapeHtml(name)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 async function transactions() {

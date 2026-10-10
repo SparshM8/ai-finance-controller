@@ -26,18 +26,23 @@ def dashboard_summary(
     review = db.query(models.Reconciliation).filter_by(status="REVIEW_REQUIRED").count()
     unresolved = db.query(models.Reconciliation).filter_by(status="UNRESOLVED").count()
 
-    total_value = db.query(func.coalesce(func.sum(models.Reconciliation.expected_amount), 0.0)).scalar() or 0.0
-    reconciled_value = (
-        db.query(func.coalesce(func.sum(models.Reconciliation.actual_amount), 0.0))
-        .filter(models.Reconciliation.status.in_(("RECONCILED", "MATCHED_WITH_FEE")))
-        .scalar() or 0.0
-    )
+    total_value_rows = db.query(
+        models.Reconciliation.currency, 
+        func.sum(models.Reconciliation.expected_amount)
+    ).group_by(models.Reconciliation.currency).all()
+    total_value = {c: round(float(v), 2) for c, v in total_value_rows if c and v}
 
-    at_risk_value = (
-        db.query(func.coalesce(func.sum(models.Reconciliation.expected_amount), 0.0))
-        .filter(models.Reconciliation.status.notin_(("RECONCILED", "MATCHED_WITH_FEE")))
-        .scalar() or 0.0
-    )
+    reconciled_value_rows = db.query(
+        models.Reconciliation.currency, 
+        func.sum(models.Reconciliation.actual_amount)
+    ).filter(models.Reconciliation.status.in_(("RECONCILED", "MATCHED_WITH_FEE"))).group_by(models.Reconciliation.currency).all()
+    reconciled_value = {c: round(float(v), 2) for c, v in reconciled_value_rows if c and v}
+
+    at_risk_value_rows = db.query(
+        models.Reconciliation.currency, 
+        func.sum(models.Reconciliation.expected_amount)
+    ).filter(models.Reconciliation.status.notin_(("RECONCILED", "MATCHED_WITH_FEE"))).group_by(models.Reconciliation.currency).all()
+    at_risk_value = {c: round(float(v), 2) for c, v in at_risk_value_rows if c and v}
 
     breakdown_rows = (
         db.query(models.Reconciliation.exception_type, func.count())
@@ -64,9 +69,9 @@ def dashboard_summary(
         review=review,
         unresolved=unresolved,
         match_rate=round(matched / total, 4) if total else 0.0,
-        total_value=round(total_value, 2),
-        reconciled_value=round(reconciled_value, 2),
-        at_risk_value=round(at_risk_value, 2),
+        total_value=total_value,
+        reconciled_value=reconciled_value,
+        at_risk_value=at_risk_value,
         exception_breakdown=breakdown,
         high_value_review_count=high_value,
         avg_ai_confidence=round(float(avg_conf), 4) if avg_conf is not None else None,

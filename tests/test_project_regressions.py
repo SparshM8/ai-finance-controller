@@ -103,6 +103,6 @@ def test_dashboard_exposure_matches_unmatched_orders(client, admin_token):
         expected = sum(r.expected_amount for r in db.query(models.Reconciliation).all()
                        if r.status not in ("RECONCILED", "MATCHED_WITH_FEE"))
     summary = client.get("/api/dashboard/summary", headers=headers).json()
-    assert summary["at_risk_value"] == round(expected, 2)
+    assert sum(summary["at_risk_value"].values()) == round(expected, 2)
     answer = client.post("/api/ai/ask", params={"question": "How much is unreconciled?"}, headers=headers).json()["answer"]
     assert answer.startswith(f"{expected:,.0f} across")
