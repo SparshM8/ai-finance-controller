@@ -38,7 +38,13 @@
         <div id="transaction-table" class="table-wrap"></div><div class="toolbar"><button id="previous" class="secondary">Previous</button><span id="page-info"></span><button id="next" class="secondary">Next</button></div>
       </section>
       <section id="exceptions" class="panel view" hidden>
-        <h2>Exception review</h2><label>Review status<select id="exception-status"><option value="">All statuses</option><option>OPEN</option><option>RESOLVED</option><option>REJECTED</option><option>OVERRIDDEN</option></select></label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div style="display: flex; gap: 16px; align-items: center;">
+            <h2 style="margin: 0;">Exception review</h2>
+            <label style="margin: 0;">Status<select id="exception-status" style="margin-left: 8px;"><option value="">All statuses</option><option>OPEN</option><option>PENDING_APPROVAL</option><option>RESOLVED</option><option>REJECTED</option><option>OVERRIDDEN</option></select></label>
+          </div>
+          <button id="export-exceptions" class="secondary" style="margin: 0;">Download CSV Export</button>
+        </div>
         <p class="muted">Showing up to 500 exceptions. Analyze a case before recording your decision.</p><div id="exception-table" class="table-wrap"></div>
       </section>
       <section id="batches" class="panel view" hidden>
@@ -48,7 +54,19 @@
           <button>Upload and reconcile</button><p class="muted">All four sources are required. Use the generated data/*.csv files as format examples.</p>
         </form><div id="batch-table" class="table-wrap"></div>
       </section>
-      <section id="assistant" class="panel view" hidden><h2>Finance Q&A</h2><p>Database-backed, deterministic answers. Optional LLM analysis is available on ambiguous exception cases.</p><form id="ask-form" class="toolbar"><label>Question<input name="question" required placeholder="How much is unreconciled?"></label><button>Ask</button></form><p id="answer" aria-live="polite"></p></section>
+      <section id="assistant" class="panel view" hidden>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h2 style="margin: 0;">Finance Q&A Assistant</h2>
+          <span style="background: rgba(14, 165, 233, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Powered by AGY</span>
+        </div>
+        <div id="chat-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+           <div style="align-self: flex-start; background: var(--bg); padding: 12px 16px; border-radius: 12px; border-bottom-left-radius: 4px; max-width: 85%; border: 1px solid var(--border); font-size: 14px; line-height: 1.5;">Hello! I am your AI Finance Controller. Ask me anything about your reconciliation batches, discrepancies, or exceptions.</div>
+        </div>
+        <form id="ask-form" style="display: flex; gap: 8px;">
+          <input name="question" required placeholder="e.g. How much is unreconciled?" style="flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
+          <button type="submit" style="padding: 12px 24px; border-radius: 8px; font-weight: 600;">Ask AI</button>
+        </form>
+      </section>
       <section id="audit" class="panel view" hidden><h2>Audit trail</h2><p class="muted">Latest 200 actions.</p><div id="audit-table" class="table-wrap"></div></section>
     </div>
   </main>

@@ -153,8 +153,37 @@ $("upload-form").addEventListener("submit", event => {
   });
 });
 $("ask-form").addEventListener("submit", event => {
-  event.preventDefault(); const question = event.currentTarget.elements.question.value;
-  busy(event.submitter, async () => { const result = await api(`/api/ai/ask?${new URLSearchParams({question})}`, {method: "POST"}); $("answer").textContent = `${result.answer}\nSource: ${result.source}`; });
+  event.preventDefault(); const form = event.currentTarget; const input = form.elements.question; const question = input.value;
+  if (!question.trim()) return;
+  input.value = "";
+  const container = $("chat-container");
+  const addMsg = (text, isUser) => {
+    const div = document.createElement("div");
+    div.style.alignSelf = isUser ? "flex-end" : "flex-start";
+    div.style.background = isUser ? "var(--accent)" : "var(--bg)";
+    div.style.color = isUser ? "white" : "inherit";
+    div.style.padding = "12px 16px";
+    div.style.borderRadius = "12px";
+    div.style.borderBottomRightRadius = isUser ? "4px" : "12px";
+    div.style.borderBottomLeftRadius = isUser ? "12px" : "4px";
+    div.style.maxWidth = "85%";
+    div.style.border = "1px solid var(--border)";
+    div.style.fontSize = "14px";
+    div.style.lineHeight = "1.5";
+    div.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  };
+  addMsg(question, true);
+  busy(event.submitter, async () => { 
+    const result = await api(`/api/ai/ask?${new URLSearchParams({question})}`, {method: "POST"}); 
+    addMsg(`${result.answer}\n\n[Source: ${result.source}]`, false); 
+  });
+});
+$("export-exceptions").addEventListener("click", () => {
+  const params = new URLSearchParams();
+  if ($("exception-status").value) params.set("status", $("exception-status").value);
+  window.open(`/api/exceptions/export?${params}`, "_blank");
 });
 $("workspace").addEventListener("click", event => {
   const button = event.target.closest("button"); if (!button) return;
