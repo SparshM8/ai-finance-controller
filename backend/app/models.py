@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
+from decimal import Decimal
 
 from backend.app.database import Base
 
@@ -41,7 +42,7 @@ class Order(Base):
     order_id: Mapped[str] = mapped_column(String(64), index=True)
     customer_id: Mapped[str] = mapped_column(String(64))
     order_date: Mapped[date] = mapped_column(Date)
-    amount: Mapped[float] = mapped_column(Float)
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     currency: Mapped[str] = mapped_column(String(8), default="INR")
     status: Mapped[str] = mapped_column(String(30))
 
@@ -54,7 +55,7 @@ class Payment(Base):
     payment_id: Mapped[str] = mapped_column(String(64), index=True)
     order_id: Mapped[str] = mapped_column(String(64), index=True)
     payment_date: Mapped[date] = mapped_column(Date)
-    amount: Mapped[float] = mapped_column(Float)
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     status: Mapped[str] = mapped_column(String(30), default="success")
     duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -67,9 +68,9 @@ class Settlement(Base):
     settlement_id: Mapped[str] = mapped_column(String(64), index=True)
     payment_id: Mapped[str] = mapped_column(String(64), index=True)
     settlement_date: Mapped[date] = mapped_column(Date)
-    gross_amount: Mapped[float] = mapped_column(Float)
-    fee: Mapped[float] = mapped_column(Float, default=0.0)
-    net_amount: Mapped[float] = mapped_column(Float)
+    gross_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    fee: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=0.0)
+    net_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     status: Mapped[str] = mapped_column(String(30), default="success")
     duplicate: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -82,7 +83,7 @@ class BankTransaction(Base):
     bank_txn_id: Mapped[str] = mapped_column(String(64), index=True)
     transaction_date: Mapped[date] = mapped_column(Date)
     reference: Mapped[str] = mapped_column(String(64), index=True)
-    amount: Mapped[float] = mapped_column(Float)
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     type: Mapped[str] = mapped_column(String(16), default="CREDIT")
 
 
@@ -102,9 +103,9 @@ class Reconciliation(Base):
     status: Mapped[str] = mapped_column(String(30), index=True)  # RECONCILED|MATCHED_WITH_FEE|REVIEW_REQUIRED|UNRESOLVED
     match_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
     exception_type: Mapped[str | None] = mapped_column(String(40), nullable=True, index=True)
-    expected_amount: Mapped[float] = mapped_column(Float)
-    actual_amount: Mapped[float] = mapped_column(Float)
-    difference: Mapped[float] = mapped_column(Float)
+    expected_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    actual_amount: Mapped[Decimal] = mapped_column(Numeric(15, 2))
+    difference: Mapped[Decimal] = mapped_column(Numeric(15, 2))
     currency: Mapped[str] = mapped_column(String(8), default="INR")
     confidence: Mapped[float] = mapped_column(Float)
     explanation: Mapped[str] = mapped_column(Text, default="")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
+from decimal import Decimal
 
 from backend.app.services.matching_engine import ReconciliationResult, RESOLVED_STATUSES
 
@@ -83,7 +84,7 @@ def evaluate(results: list[ReconciliationResult], ground_truth: list[dict[str, A
     correct = 0
     false_positives = 0
     false_negatives = 0
-    fp_impact = 0.0
+    fp_impact = Decimal("0.00")
     unresolved = 0
 
     for r in results:

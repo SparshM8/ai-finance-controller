@@ -10,6 +10,7 @@ import csv
 import io
 import re
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 SOURCE_KINDS = ("orders", "payments", "settlements", "bank_transactions")
@@ -24,16 +25,16 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 _AMOUNT_RE = re.compile(r"[^\d.-]")
 
 
-def parse_amount(value: Any) -> float | None:
-    """Parse '₹2,500', '2,500.00', '2500' -> 2500.0. Returns None if invalid."""
+def parse_amount(value: Any) -> Decimal | None:
+    """Parse '₹2,500', '2,500.00', '2500' -> Decimal('2500.00'). Returns None if invalid."""
     if value is None:
         return None
     cleaned = _AMOUNT_RE.sub("", str(value).strip())
     if cleaned in ("", "-", "."):
         return None
     try:
-        return round(float(cleaned), 2)
-    except ValueError:
+        return Decimal(cleaned).quantize(Decimal("0.01"))
+    except InvalidOperation:
         return None
 
 
@@ -128,7 +129,9 @@ def normalize_records(kind: str, rows: list[dict[str, str]]) -> tuple[list[dict[
             })
         elif kind == "settlements":
             gross = parse_amount(raw.get("gross_amount"))
-            fee = parse_amount(raw.get("fee")) or 0.0
+            fee = parse_amount(raw.get("fee"))
+            if fee is None:
+                fee = Decimal("0.00")
             net = parse_amount(raw.get("net_amount"))
             settlement_date = parse_date(raw.get("settlement_date"))
             if gross is None:

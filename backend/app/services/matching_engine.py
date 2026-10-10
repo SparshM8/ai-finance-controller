@@ -12,9 +12,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
-AMOUNT_EPS = 0.01
+AMOUNT_EPS = Decimal("0.01")
 
 # Statuses that count as reconciled in match-rate metrics.
 RESOLVED_STATUSES = frozenset({"RECONCILED", "MATCHED_WITH_FEE"})
@@ -28,10 +29,10 @@ EXCEPTION_TYPES = frozenset({
 
 @dataclass
 class ReconciliationConfig:
-    high_value_threshold: float = 50_000.0
+    high_value_threshold: Decimal = Decimal("50000.00")
     settlement_delay_window_days: int = 3
     bank_delay_window_days: int = 3
-    amount_eps: float = AMOUNT_EPS
+    amount_eps: Decimal = AMOUNT_EPS
 
 
 @dataclass
@@ -47,9 +48,9 @@ class ReconciliationResult:
     payment_date: date | None = None
     settlement_date: date | None = None
     bank_date: date | None = None
-    expected_amount: float = 0.0
-    actual_amount: float = 0.0
-    difference: float = 0.0
+    expected_amount: Decimal = Decimal("0.00")
+    actual_amount: Decimal = Decimal("0.00")
+    difference: Decimal = Decimal("0.00")
     currency: str = "INR"
     confidence: float = 0.0
     explanation: str = ""
@@ -82,11 +83,15 @@ class ReconciliationResult:
         return out
 
 
-def _r2(x: float) -> float:
-    return round(float(x), 2)
+def _r2(x: Any) -> Decimal:
+    if isinstance(x, Decimal):
+        return x.quantize(Decimal("0.01"))
+    if x is None:
+        return Decimal("0.00")
+    return Decimal(str(x)).quantize(Decimal("0.01"))
 
 
-def _fmt(x: float) -> str:
+def _fmt(x: Decimal) -> str:
     return f"₹{x:,.2f}"
 
 
@@ -160,7 +165,7 @@ def _reconcile_order(
     eps = cfg.amount_eps
 
     def settle(status: str, match_type: str, exception_type: str | None, confidence: float,
-               explanation: str, action: str, actual: float | None = None) -> ReconciliationResult:
+               explanation: str, action: str, actual: Decimal | None = None) -> ReconciliationResult:
         result.status = status
         result.match_type = match_type
         result.exception_type = exception_type
@@ -176,13 +181,13 @@ def _reconcile_order(
     if not payments:
         return settle("REVIEW_REQUIRED", "MISSING_PAYMENT", "MISSING_PAYMENT", 0.95,
                       "Order exists with no payment record.",
-                      "REQUIRES_REVIEW", actual=0.0)
+                      "REQUIRES_REVIEW", actual=Decimal("0.00"))
 
     primary = payments[0]
     result.payment_id = str(primary.get("payment_id", ""))
     result.payment_date = primary.get("payment_date")
     result.data["payments"] = len(payments)
-    result.data["payment_amount"] = _r2(primary.get("amount", 0.0))
+    result.data["payment_amount"] = _r2(primary.get("amount", Decimal("0.00")))
     result.data["payment_status"] = str(primary.get("status", "success")).lower()
     result.data["duplicate_payment_id"] = str(primary.get("payment_id")) in dup_payment_ids
 
@@ -193,7 +198,7 @@ def _reconcile_order(
     if refunded and not non_refunded:
         return settle("REVIEW_REQUIRED", "REFUND", "REFUND", 0.90,
                       "Payment is marked refunded; confirm the refund completed in bank records.",
-                      "REQUIRES_REVIEW", actual=0.0)
+                      "REQUIRES_REVIEW", actual=Decimal("0.00"))
 
     # --- duplicate payment -----------------------------------------------
     if str(primary.get("payment_id")) in dup_payment_ids:
@@ -201,7 +206,7 @@ def _reconcile_order(
                       "The payment id appears more than once in the source data; requires a deduplication decision.",
                       "REQUIRES_REVIEW", actual=expected)
 
-    total_paid = _r2(sum(p.get("amount", 0.0) for p in non_refunded))
+    total_paid = _r2(sum(p.get("amount", Decimal("0.00")) for p in non_refunded))
 
     # --- partial payment -------------------------------------------------
     if total_paid < expected - eps:
@@ -227,9 +232,9 @@ def _reconcile_order(
                       "REQUIRES_REVIEW", actual=total_paid)
 
     result.settlement_date = s.get("settlement_date")
-    gross = _r2(s.get("gross_amount", 0.0))
-    fee = _r2(s.get("fee", 0.0))
-    net = _r2(s.get("net_amount", 0.0))
+    gross = _r2(s.get("gross_amount", Decimal("0.00")))
+    fee = _r2(s.get("fee", Decimal("0.00")))
+    net = _r2(s.get("net_amount", Decimal("0.00")))
     result.data["settlement_gross"] = gross
     result.data["settlement_fee"] = fee
     result.data["settlement_net"] = net
@@ -264,12 +269,12 @@ def _reconcile_order(
                           "ESCALATE", actual=net)
 
     # --- amount check vs payment/gross -----------------------------------
-    gap = _r2(_r2(primary.get("amount", 0.0)) - gross)
+    gap = _r2(_r2(primary.get("amount", Decimal("0.00"))) - gross)
     delay_days = _date_diff(s.get("settlement_date"), primary.get("payment_date"))
 
     if abs(gap) > eps:
         return settle("REVIEW_REQUIRED", "AMOUNT_MISMATCH", "AMOUNT_MISMATCH", 0.80,
-                      f"Settlement gross {_fmt(gross)} differs from payment {_fmt(primary.get('amount', 0.0))} "
+                      f"Settlement gross {_fmt(gross)} differs from payment {_fmt(primary.get('amount', Decimal('0.00')))} "
                       f"by {_fmt(abs(gap))} with no recorded fee or partial payment to explain it.",
                       "REQUIRES_REVIEW", actual=net)
 
@@ -297,7 +302,7 @@ def _reconcile_order(
                           "REQUIRES_REVIEW", actual=net)
         result.bank_transaction_id = str(bank.get("bank_txn_id", ""))
         result.bank_date = bank.get("transaction_date")
-        bank_amount = _r2(bank.get("amount", 0.0))
+        bank_amount = _r2(bank.get("amount", Decimal("0.00")))
         result.data["bank_amount"] = bank_amount
         if abs(bank_amount - net) > eps:
             return settle("REVIEW_REQUIRED", "AMOUNT_MISMATCH", "AMOUNT_MISMATCH", 0.80,
@@ -331,10 +336,10 @@ def _date_diff(a: Any, b: Any) -> int:
     return (a - b).days
 
 
-def _bank_by_amount(bank_by_reference: dict[str, list[dict]], amount: float) -> list[dict]:
+def _bank_by_amount(bank_by_reference: dict[str, list[dict]], amount: Decimal) -> list[dict]:
     out: list[dict] = []
     for banks in bank_by_reference.values():
         for b in banks:
-            if abs(_r2(b.get("amount", 0.0)) - amount) <= AMOUNT_EPS:
+            if abs(_r2(b.get("amount", Decimal("0.00"))) - amount) <= AMOUNT_EPS:
                 out.append(b)
     return out

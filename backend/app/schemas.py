@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -50,9 +51,9 @@ class ReconciliationOut(BaseModel):
     status: str
     match_type: str | None
     exception_type: str | None
-    expected_amount: float
-    actual_amount: float
-    difference: float
+    expected_amount: Decimal
+    actual_amount: Decimal
+    difference: Decimal
     currency: str
     confidence: float
     explanation: str

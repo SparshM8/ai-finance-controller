@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 
 from backend.app.services.matching_engine import ReconciliationResult, RESOLVED_STATUSES
 
@@ -58,7 +59,7 @@ def build_exception_spec(result: ReconciliationResult) -> ExceptionSpec | None:
 def _severity(result: ReconciliationResult) -> str:
     if result.exception_type in SEVERITY_HIGH_TYPES:
         return "HIGH"
-    if abs(result.difference) > 0.05 * max(result.expected_amount, 1.0) or result.expected_amount > 50_000:
+    if abs(result.difference) > Decimal("0.05") * max(result.expected_amount, Decimal("1.00")) or result.expected_amount > Decimal("50000"):
         return "HIGH"
     return "MEDIUM"
 

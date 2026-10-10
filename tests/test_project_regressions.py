@@ -1,5 +1,6 @@
 """Regression coverage for the restored dashboard and finance reporting."""
 
+from decimal import Decimal
 
 from backend.app import models
 from backend.app.database import SessionLocal
@@ -80,9 +81,9 @@ def test_analysis_uses_own_batch_evidence(client, admin_token, monkeypatch):
     monkeypatch.setattr(exceptions, "analyze", capture)
     response = client.post(f"/api/exceptions/{exc_id}/analyze", headers=headers)
     assert response.status_code == 200
-    assert captured["payment_amount"] == 12345.67
-    assert captured["settlement_fee"] == 42.25
-    assert captured["bank_amount"] == 9876.54
+    assert captured["payment_amount"] == Decimal("12345.67")
+    assert captured["settlement_fee"] == Decimal("42.25")
+    assert captured["bank_amount"] == Decimal("9876.54")
 
 
 def test_qa_specific_question_and_audit(client, admin_token):
