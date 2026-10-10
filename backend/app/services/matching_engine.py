@@ -195,8 +195,8 @@ def _reconcile_order(
                       "Payment is marked refunded; confirm the refund completed in bank records.",
                       "REQUIRES_REVIEW", actual=0.0)
 
-    # --- duplicate -------------------------------------------------------
-    if str(primary.get("payment_id")) in dup_payment_ids or str(primary.get("payment_id")) in dup_settlement_ids:
+    # --- duplicate payment -----------------------------------------------
+    if str(primary.get("payment_id")) in dup_payment_ids:
         return settle("REVIEW_REQUIRED", "DUPLICATE", "DUPLICATE", 0.99,
                       "The payment id appears more than once in the source data; requires a deduplication decision.",
                       "REQUIRES_REVIEW", actual=expected)
@@ -219,6 +219,13 @@ def _reconcile_order(
 
     s = ss[0]
     result.settlement_id = str(s.get("settlement_id", ""))
+    
+    # --- duplicate settlement --------------------------------------------
+    if result.settlement_id in dup_settlement_ids:
+        return settle("REVIEW_REQUIRED", "DUPLICATE", "DUPLICATE", 0.99,
+                      "The settlement id appears more than once in the source data; requires a deduplication decision.",
+                      "REQUIRES_REVIEW", actual=total_paid)
+
     result.settlement_date = s.get("settlement_date")
     gross = _r2(s.get("gross_amount", 0.0))
     fee = _r2(s.get("fee", 0.0))

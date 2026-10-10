@@ -5,13 +5,14 @@ from __future__ import annotations
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+import os
+
+# On Vercel, the local directory is read-only. We must write to /tmp.
+_default_db = "sqlite:////tmp/finance_controller.db" if os.environ.get("VERCEL") else "sqlite:///./data/finance_controller.db"
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    import os
-    # On Vercel, the local directory is read-only. We must write to /tmp.
-    _default_db = "sqlite:////tmp/finance_controller.db" if os.environ.get("VERCEL") else "sqlite:///./data/finance_controller.db"
-    
     # Database
     database_url: str = _default_db
 
