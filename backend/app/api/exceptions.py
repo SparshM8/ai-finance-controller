@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -67,6 +67,50 @@ def list_exceptions(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get("/export")
+def export_exceptions(
+    batch_id: int | None = Query(default=None),
+    status: str | None = Query(default=None),
+    exception_type: str | None = Query(default=None),
+    user: models.User = Depends(require_roles(*VIEW_ROLES)),
+    db: Session = Depends(get_db),
+):
+    import io
+    import csv
+    from fastapi import Response
+
+    q = db.query(models.ExceptionRecord)
+    if batch_id is not None:
+        q = q.join(models.Reconciliation).filter(models.Reconciliation.batch_id == batch_id)
+    if status is not None:
+        q = q.filter_by(status=status)
+    if exception_type is not None:
+        q = q.filter_by(type=exception_type)
+        
+    items = q.order_by(models.ExceptionRecord.id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Batch ID", "Type", "Status", "Severity", "Description", "Resolved By", "Resolved At"])
+    for e in items:
+        writer.writerow([
+            e.id, 
+            e.reconciliation.batch_id if e.reconciliation else "", 
+            e.type, 
+            e.status, 
+            e.severity, 
+            e.description, 
+            e.resolved_by or "", 
+            e.resolved_at.isoformat() if e.resolved_at else ""
+        ])
+        
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=exceptions.csv"}
     )
 
 
@@ -198,7 +242,7 @@ def _resolve(db: Session, exc: models.ExceptionRecord, new_status: str, user: mo
     old_status = exc.status
     exc.status = new_status
     exc.resolved_by = user.email
-    exc.resolved_at = datetime.utcnow()
+    exc.resolved_at = datetime.now(timezone.utc)
     exc.reviewer_comment = comment
     db.add(models.AuditLog(
         entity_type="exception",

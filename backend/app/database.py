@@ -45,12 +45,14 @@ def init_db() -> None:
 
     Base.metadata.create_all(bind=engine)
 
-    with SessionLocal() as db:
-        if db.query(models.User).filter_by(email="admin@example.com").first() is None:
-            db.add(models.User(
-                name="Demo Admin",
-                email="admin@example.com",
-                password_hash=hash_password("admin123"),
-                role="admin",
-            ))
-            db.commit()
+    import os
+    if not os.environ.get("VERCEL") and not os.environ.get("PRODUCTION"):
+        with SessionLocal() as db:
+            if db.query(models.User).filter_by(email="admin@example.com").first() is None:
+                db.add(models.User(
+                    name="Demo Admin",
+                    email="admin@example.com",
+                    password_hash=hash_password("admin123"),
+                    role="admin",
+                ))
+                db.commit()
