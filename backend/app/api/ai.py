@@ -58,16 +58,25 @@ def _answer(q: str, lc: str, db: Session, limit: int) -> str:
 
 
 def _answer_unreconciled(db: Session) -> str:
-    total_value = db.query(func.coalesce(func.sum(models.Reconciliation.expected_amount), 0.0)).scalar() or 0.0
-    at_risk = (
-        db.query(func.coalesce(func.sum(models.Reconciliation.expected_amount), 0.0))
+    total_rows = db.query(models.Reconciliation.currency, func.sum(models.Reconciliation.expected_amount)).group_by(models.Reconciliation.currency).all()
+    at_risk_rows = (
+        db.query(models.Reconciliation.currency, func.sum(models.Reconciliation.expected_amount))
         .filter(models.Reconciliation.status.notin_(("RECONCILED", "MATCHED_WITH_FEE")))
-        .scalar()
-    ) or 0.0
+        .group_by(models.Reconciliation.currency)
+        .all()
+    )
+    
+    total_value = {c: float(v) for c, v in total_rows if c and v}
+    at_risk = {c: float(v) for c, v in at_risk_rows if c and v}
+    
     unresolved = db.query(models.Reconciliation).filter_by(status="UNRESOLVED").count()
     review = db.query(models.Reconciliation).filter_by(status="REVIEW_REQUIRED").count()
-    pct = (at_risk / total_value * 100) if total_value else 0
-    return f"{at_risk:,.0f} across {unresolved} unresolved and {review} under review remains to be reconciled. That is {pct:.1f}% of the total {total_value:,.0f} processed."
+    
+    if not at_risk:
+        return f"Nothing is at risk across {unresolved} unresolved and {review} under review."
+        
+    at_risk_str = " + ".join([f"{v:,.0f} {c}" for c, v in at_risk.items()])
+    return f"{at_risk_str} across {unresolved} unresolved and {review} under review remains to be reconciled."
 
 
 def _answer_exceptions(db: Session, limit: int) -> str:
@@ -107,7 +116,7 @@ def _answer_specific(db: Session, q: str, limit: int) -> str:
     if len(records) > 1:
         return f"{oid} appears in multiple batches. Open the transaction explorer to select the intended batch; a unique answer cannot be determined."
     rec = records[0]
-    return f"{oid}: expected {rec.expected_amount:,.0f}, received {rec.actual_amount:,.0f} (difference {rec.difference:,.0f}). Status: {rec.status}. Exception: {rec.exception_type or "none"}. Confidence: {rec.confidence:.0%}. Explanation: {rec.explanation or "no explanation recorded"}."
+    return f"{oid}: expected {rec.expected_amount:,.0f} {rec.currency}, received {rec.actual_amount:,.0f} {rec.currency} (difference {rec.difference:,.0f} {rec.currency}). Status: {rec.status}. Exception: {rec.exception_type or 'none'}. Confidence: {rec.confidence:.0%}. Explanation: {rec.explanation or 'no explanation recorded'}."
 
 
 def _answer_summary(db: Session) -> str:

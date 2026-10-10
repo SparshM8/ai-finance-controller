@@ -106,4 +106,4 @@ def test_dashboard_exposure_matches_unmatched_orders(client, admin_token):
     summary = client.get("/api/dashboard/summary", headers=headers).json()
     assert sum(summary["at_risk_value"].values()) == round(expected, 2)
     answer = client.post("/api/ai/ask", params={"question": "How much is unreconciled?"}, headers=headers).json()["answer"]
-    assert answer.startswith(f"{expected:,.0f} across")
+    assert answer.startswith(f"{expected:,.0f} INR across")

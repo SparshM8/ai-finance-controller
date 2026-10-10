@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     database_url: str = _default_db
 
     # Auth
-    jwt_secret: str = "dev-secret-change-me"
+    jwt_secret: str = "dev-secret-change-me-to-at-least-32-bytes"
     jwt_expires_minutes: int = 480
 
     # Reconciliation rules
