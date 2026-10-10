@@ -39,21 +39,24 @@ def upload_batch(
 
     batch = models.Batch(batch_name=batch_name.strip() or f"Batch", uploaded_by=user.id)
     db.add(batch)
-    db.commit()
-    db.refresh(batch)
+    db.flush()  # get batch.id without committing
 
-    total = persist_records(db, batch.id, records_by_kind)
-    batch.total_records = total
-    db.add(models.AuditLog(
-        entity_type="batch",
-        entity_id=str(batch.id),
-        action="UPLOAD",
-        actor=user.email,
-        old_value="",
-        new_value=f"{total} records across {len(records_by_kind)} sources",
-        reason=f"batch_name={batch.batch_name}",
-    ))
-    db.commit()
+    try:
+        total = persist_records(db, batch.id, records_by_kind)
+        batch.total_records = total
+        db.add(models.AuditLog(
+            entity_type="batch",
+            entity_id=str(batch.id),
+            action="UPLOAD",
+            actor=user.email,
+            old_value="",
+            new_value=f"{total} records across {len(records_by_kind)} sources",
+            reason=f"batch_name={batch.batch_name}",
+        ))
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to persist records: {str(e)}")
 
     return {"batch_id": batch.id, "total_records": total, "status": batch.status}
 
