@@ -13,13 +13,46 @@
   <header><div><p class="eyebrow">FINANCE OPERATIONS</p><h1>AI Finance Controller</h1><p>Deterministic reconciliation. Explainable exceptions. Auditable decisions.</p></div><a href="/docs">API documentation</a></header>
   <main>
     <div id="notice" role="status" aria-live="polite" hidden></div>
-    <section id="login-panel" class="panel narrow">
-      <h2>Sign in</h2><p>Local demo: admin@example.com / admin123. Do not use demo credentials in production.</p>
-      <form id="login-form">
-        <label>Email<input name="email" type="email" autocomplete="username" value="admin@example.com" required></label>
-        <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
-        <div class="toolbar"><button type="submit">Sign in</button><button id="demo-login" type="button" class="secondary">Try local demo</button></div>
-      </form>
+    <section id="login-panel" style="max-width: 1200px; margin: 20px auto 60px; display: flex; flex-direction: column; gap: 40px; padding: 0 20px;">
+      <!-- Hero Section -->
+      <div style="text-align: center; padding: 60px 0 20px;">
+        <h1 style="font-size: clamp(36px, 5vw, 64px); margin-bottom: 24px; line-height: 1.1; letter-spacing: -1px;">Automate Your Financial Reconciliation<br>with Deterministic AI</h1>
+        <p style="font-size: 18px; color: var(--text-muted); max-width: 750px; margin: 0 auto; line-height: 1.6;">Stop chasing discrepancies manually. Our dual-engine platform instantly reconciles payments, isolates exceptions, and provides an explainable audit trail for every transaction.</p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: center;">
+        
+        <!-- Features Grid -->
+        <div style="flex: 1; min-width: 320px; display: grid; grid-template-columns: 1fr; gap: 20px;">
+          <div class="panel" style="margin: 0; padding: 24px; background: rgba(18, 27, 44, 0.4); border-left: 4px solid var(--primary);">
+             <h3 style="color: #fff; margin-bottom: 8px; font-size: 18px;">100% Deterministic Engine</h3>
+             <p style="margin: 0; font-size: 14px; color: var(--text-muted);">Rule-based matching ensures absolute financial precision for reconciled transactions, eliminating LLM hallucinations.</p>
+          </div>
+          <div class="panel" style="margin: 0; padding: 24px; background: rgba(18, 27, 44, 0.4); border-left: 4px solid var(--success);">
+             <h3 style="color: #fff; margin-bottom: 8px; font-size: 18px;">Maker-Checker Workflow</h3>
+             <p style="margin: 0; font-size: 14px; color: var(--text-muted);">Enterprise-grade dual approval process for high-value exceptions, ensuring compliance and security.</p>
+          </div>
+          <div class="panel" style="margin: 0; padding: 24px; background: rgba(18, 27, 44, 0.4); border-left: 4px solid var(--accent);">
+             <h3 style="color: #fff; margin-bottom: 8px; font-size: 18px;">AI Finance Assistant</h3>
+             <p style="margin: 0; font-size: 14px; color: var(--text-muted);">Chat with your data. Our integrated LLM explains discrepancies and answers queries based on your unique datasets.</p>
+          </div>
+        </div>
+
+        <!-- Login Panel -->
+        <div class="panel" style="flex: 1; min-width: 320px; max-width: 480px; margin: 0; padding: 40px; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(56, 189, 248, 0.1);">
+          <h2 style="font-size: 28px; margin-bottom: 8px;">Enter Workspace</h2>
+          <p style="margin-bottom: 32px; font-size: 14px; color: var(--text-muted);">Sign in to access your reconciliation dashboard.</p>
+          <form id="login-form">
+            <label>Email<input name="email" type="email" autocomplete="username" value="admin@example.com" required></label>
+            <label>Password<input name="password" type="password" autocomplete="current-password" value="admin123" required></label>
+            <div class="toolbar" style="margin-top: 32px; display: flex; flex-direction: column; gap: 16px;">
+              <button type="submit" style="width: 100%; padding: 16px; font-size: 16px;">Sign in securely</button>
+              <button id="demo-login" type="button" class="secondary" style="width: 100%; padding: 16px;">Try local demo</button>
+            </div>
+            <p class="muted" style="text-align: center; margin-top: 24px; font-size: 12px;">Demo credentials pre-filled.</p>
+          </form>
+        </div>
+      </div>
     </section>
     <div id="workspace" hidden>
       <div class="toolbar"><span id="identity"></span><button id="refresh" class="secondary">Refresh</button><button id="load-demo" data-write>Load demo dataset</button><button id="logout" class="secondary">Sign out</button></div>
