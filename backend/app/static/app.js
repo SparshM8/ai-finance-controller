@@ -152,32 +152,87 @@ $("upload-form").addEventListener("submit", event => {
     form.reset(); await refresh(); notice(`Batch #${batch.batch_id} reconciled.`);
   });
 });
+function formatMarkdown(text) {
+  let html = escapeHtml(text);
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.06);padding:2px 5px;border-radius:4px;font-family:monospace;">$1</code>');
+  // Markdown tables
+  html = html.replace(/((?:\|[^\n]+\|\r?\n)+)/g, (match) => {
+    const rows = match.trim().split(/\r?\n/).filter(r => r.trim().startsWith('|'));
+    if (rows.length < 2) return match;
+    let table = '<div style="overflow-x:auto; margin:10px 0;"><table style="width:100%; border-collapse:collapse; font-size:13px; border:1px solid var(--border);">';
+    rows.forEach((row, i) => {
+      if (row.includes('---')) return;
+      const cells = row.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+      const tag = i === 0 ? 'th' : 'td';
+      const bg = i === 0 ? 'background:rgba(0,0,0,0.05); font-weight:700;' : '';
+      table += `<tr>${cells.map(c => `<${tag} style="border:1px solid var(--border); padding:7px 10px; ${bg}">${c}</${tag}>`).join('')}</tr>`;
+    });
+    table += '</table></div>';
+    return table;
+  });
+  // Bullet lists
+  html = html.replace(/(?:^|\n)[-•] (.+)/g, '<br>• $1');
+  // Linebreaks
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
 $("ask-form").addEventListener("submit", event => {
   event.preventDefault(); const form = event.currentTarget; const input = form.elements.question; const question = input.value;
   if (!question.trim()) return;
   input.value = "";
   const container = $("chat-container");
-  const addMsg = (text, isUser) => {
+  const addMsg = (text, isUser, source = null) => {
     const div = document.createElement("div");
     div.style.alignSelf = isUser ? "flex-end" : "flex-start";
     div.style.background = isUser ? "var(--accent)" : "var(--bg)";
     div.style.color = isUser ? "white" : "inherit";
-    div.style.padding = "12px 16px";
-    div.style.borderRadius = "12px";
-    div.style.borderBottomRightRadius = isUser ? "4px" : "12px";
-    div.style.borderBottomLeftRadius = isUser ? "12px" : "4px";
-    div.style.maxWidth = "85%";
+    div.style.padding = "14px 18px";
+    div.style.borderRadius = "14px";
+    div.style.borderBottomRightRadius = isUser ? "4px" : "14px";
+    div.style.borderBottomLeftRadius = isUser ? "14px" : "4px";
+    div.style.maxWidth = "88%";
     div.style.border = "1px solid var(--border)";
     div.style.fontSize = "14px";
-    div.style.lineHeight = "1.5";
-    div.innerHTML = escapeHtml(text).replace(/\n/g, '<br>');
+    div.style.lineHeight = "1.6";
+    div.style.boxShadow = "0 2px 4px rgba(0,0,0,0.03)";
+    if (isUser) {
+      div.innerHTML = escapeHtml(text);
+    } else {
+      const badge = source ? `<div style="display:inline-block; margin-bottom:8px; font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px;">🤖 Grounded Answer • [Source: ${escapeHtml(source)}]</div><br>` : '';
+      div.innerHTML = badge + formatMarkdown(text);
+    }
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
+    return div;
   };
   addMsg(question, true);
+  
+  // Show thinking placeholder
+  const thinking = addMsg("Analyzing reconciliation ledger and query…", false);
+  thinking.style.fontStyle = "italic";
+  thinking.style.opacity = "0.75";
+
   busy(event.submitter, async () => { 
-    const result = await api(`/api/ai/ask?${new URLSearchParams({question})}`, {method: "POST"}); 
-    addMsg(`${result.answer}\n\n[Source: ${result.source}]`, false); 
+    try {
+      const result = await api(`/api/ai/ask?${new URLSearchParams({question})}`, {method: "POST"}); 
+      thinking.remove();
+      addMsg(result.answer, false, result.source); 
+    } catch (err) {
+      thinking.remove();
+      addMsg("Failed to query AI assistant. Please try again.", false, "error");
+    }
+  });
+});
+
+document.querySelectorAll(".chip-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const input = $("ask-form").elements.question;
+    input.value = btn.dataset.prompt;
+    $("ask-form").requestSubmit();
   });
 });
 $("export-exceptions").addEventListener("click", () => {

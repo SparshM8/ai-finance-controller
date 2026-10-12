@@ -88,16 +88,30 @@
         </form><div id="batch-table" class="table-wrap"></div>
       </section>
       <section id="assistant" class="panel view" hidden>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-          <h2 style="margin: 0;">Finance Q&A Assistant</h2>
-          <span style="background: rgba(14, 165, 233, 0.1); color: var(--accent); padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Powered by AGY</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h2 style="margin: 0; font-size: 20px;">Finance Q&A Assistant</h2>
+            <p class="muted" style="margin: 4px 0 0; font-size: 13px;">Grounded financial intelligence powered by Live LLM & deterministic ledger verification.</p>
+          </div>
+          <span style="background: rgba(16, 185, 129, 0.12); color: #10b981; padding: 6px 14px; border-radius: 99px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid rgba(16, 185, 129, 0.3);">🟢 AI Model: Active</span>
         </div>
-        <div id="chat-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-           <div style="align-self: flex-start; background: var(--bg); padding: 12px 16px; border-radius: 12px; border-bottom-left-radius: 4px; max-width: 85%; border: 1px solid var(--border); font-size: 14px; line-height: 1.5;">Hello! I am your AI Finance Controller. Ask me anything about your reconciliation batches, discrepancies, or exceptions.</div>
+        <div id="chat-container" style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; scroll-behavior: smooth;">
+           <div style="align-self: flex-start; background: var(--bg); padding: 14px 18px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 85%; border: 1px solid var(--border); font-size: 14px; line-height: 1.6; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+             👋 <strong>Welcome to Finance Q&A Copilot!</strong><br><br>
+             I have real-time access to your reconciliation ledger, unmatched discrepancies, and dispute statuses. You can ask me natural-language financial queries or click any suggested prompt below.
+           </div>
         </div>
-        <form id="ask-form" style="display: flex; gap: 8px;">
-          <input name="question" required placeholder="e.g. How much is unreconciled?" style="flex: 1; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px;">
-          <button type="submit" style="padding: 12px 24px; border-radius: 8px; font-weight: 600;">Ask AI</button>
+        <div id="quick-prompts" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+          <button type="button" class="chip-btn" data-prompt="What is our total financial discrepancy and at-risk amount?" style="background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text); cursor: pointer; transition: all 0.2s;">⚡ Total at-risk amount?</button>
+          <button type="button" class="chip-btn" data-prompt="Which discrepancy types should I prioritize resolving today?" style="background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text); cursor: pointer; transition: all 0.2s;">⚡ Which exceptions to prioritize?</button>
+          <button type="button" class="chip-btn" data-prompt="What is the overall match rate across our batches?" style="background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text); cursor: pointer; transition: all 0.2s;">⚡ Overall match rate?</button>
+          <button type="button" class="chip-btn" data-prompt="Explain the status and discrepancy for order ORD0002" style="background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: var(--text); cursor: pointer; transition: all 0.2s;">⚡ Check ORD0002</button>
+        </div>
+        <form id="ask-form" style="display: flex; gap: 10px;">
+          <input name="question" required placeholder="Ask about reconciliations, discrepancies, orders, or fees..." style="flex: 1; padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border); font-size: 14px; outline: none; background: var(--surface); color: inherit;">
+          <button type="submit" style="padding: 14px 28px; border-radius: 10px; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+            <span>Ask AI</span>
+          </button>
         </form>
       </section>
       <section id="audit" class="panel view" hidden><h2>Audit trail</h2><p class="muted">Latest 200 actions.</p><div id="audit-table" class="table-wrap"></div></section>
