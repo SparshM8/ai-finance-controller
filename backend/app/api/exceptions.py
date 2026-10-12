@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.app import models
-from backend.app.ai.analyzer import AIAnalysis, analyze, openai_compatible_client
+from backend.app.ai.analyzer import AIAnalysis, analyze, openai_compatible_client, call_llm_text
 from backend.app.config import settings
 from backend.app.database import get_db
 from backend.app.deps import require_review_access, require_roles
@@ -230,32 +230,27 @@ def draft_email(
     [Body here]
     """
     
-    client = _llm_client()
-    if not client:
+    content = call_llm_text(
+        system="You are a professional enterprise Finance Controller drafting clear, courteous customer communication.",
+        user=prompt,
+        temperature=0.3,
+    )
+    if not content:
         return DraftEmailOut(
             subject=f"Action Required: Payment discrepancy for Order {rec.order_id}",
-            body=f"Dear Customer,\n\nWe noticed a discrepancy of {rec.difference} {rec.currency} for your recent order {rec.order_id}. Please review this and let us know.\n\nThanks,\nFinance Team"
+            body=f"Dear Customer,\n\nWe noticed a discrepancy of {rec.difference} {rec.currency} for your recent order {rec.order_id}. Please review this and let us know.\n\nThanks,\nFinance Operations Team"
         )
         
-    try:
-        resp = client.chat.completions.create(
-            model=settings.ai_model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-        )
-        content = resp.choices[0].message.content.strip()
-        lines = content.split('\n')
-        subject = "Payment Discrepancy"
-        body = content
-        for idx, line in enumerate(lines):
-            if line.upper().startswith("SUBJECT:"):
-                subject = line[8:].strip()
-                body = "\n".join(lines[idx+1:]).replace("BODY:", "").strip()
-                break
-                
-        return DraftEmailOut(subject=subject, body=body)
-    except Exception as e:
-        return DraftEmailOut(subject="Error", body=str(e))
+    lines = content.split('\n')
+    subject = f"Payment Reconciliation Notice: Order {rec.order_id}"
+    body = content
+    for idx, line in enumerate(lines):
+        if line.upper().startswith("SUBJECT:"):
+            subject = line[8:].strip()
+            body = "\n".join(lines[idx+1:]).replace("BODY:", "").strip()
+            break
+            
+    return DraftEmailOut(subject=subject, body=body)
 
 
 @router.post("/{exception_id}/approve", response_model=ExceptionOut)

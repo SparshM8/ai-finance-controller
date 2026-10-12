@@ -203,6 +203,28 @@ def openai_compatible_client(api_key: str, base_url: str, model: str, timeout: i
     return _call
 
 
+def call_llm_text(system: str, user: str, temperature: float = 0.2) -> str | None:
+    """Send a prompt to the configured LLM and return the generated text response."""
+    if not settings.ai_api_key:
+        return None
+    try:
+        url = f"{settings.ai_base_url.rstrip('/')}/chat/completions"
+        headers = {"Authorization": f"Bearer {settings.ai_api_key}"}
+        payload = {
+            "model": settings.ai_model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": temperature,
+        }
+        resp = httpx.post(url, json=payload, headers=headers, timeout=settings.ai_timeout_seconds)
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return None
+
+
 def parse_llm_json(content: str) -> dict[str, Any]:
     """Parse model output, tolerating markdown code fences."""
     text = content.strip()

@@ -9,6 +9,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.app import models
+from backend.app.ai.analyzer import call_llm_text
+from backend.app.config import settings
 from backend.app.database import get_db
 from backend.app.deps import require_roles
 
@@ -28,7 +30,36 @@ def ask(
     if not q:
         raise HTTPException(status_code=400, detail="Question cannot be empty")
     lc = q.lower()
-    answer = _answer(q, lc, db, limit)
+    
+    source = "deterministic"
+    answer = None
+    if settings.ai_api_key:
+        summary_ctx = _answer_summary(db)
+        unrec_ctx = _answer_unreconciled(db)
+        exc_ctx = _answer_exceptions(db, limit=5)
+        context_prompt = f"""You are an enterprise AI Finance Controller assistant.
+Current Ledger Context:
+- Summary: {summary_ctx}
+- Outstanding / At Risk: {unrec_ctx}
+- Top Discrepancies: {exc_ctx}
+
+User Question: {q}
+
+Instructions:
+Answer clearly, concisely, and professionally. Ground your answer in the financial data above when relevant. For greetings or questions about capabilities, respond helpfully and briefly."""
+        llm_reply = call_llm_text(
+            system="You are an enterprise AI Finance Controller for an automated reconciliation platform.",
+            user=context_prompt,
+            temperature=0.3,
+        )
+        if llm_reply:
+            answer = llm_reply
+            source = "llm"
+
+    if not answer:
+        answer = _answer(q, lc, db, limit)
+        source = "deterministic"
+
     db.add(models.AuditLog(
         entity_type="ai_qa",
         entity_id="",
@@ -39,7 +70,8 @@ def ask(
         reason=q[:500],
     ))
     db.commit()
-    return {"question": q, "answer": answer, "source": "deterministic"}
+    return {"question": q, "answer": answer, "source": source}
+
 
 
 def _answer(q: str, lc: str, db: Session, limit: int) -> str:
