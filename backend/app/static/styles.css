@@ -380,6 +380,12 @@ body {
   cursor: pointer;
   margin-top: 20px;
   text-align: left;
+  transition: all 0.15s ease;
+}
+
+.workspace-select-btn:hover {
+  background: var(--bg-sidebar-hover);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .ws-avatar {
@@ -507,8 +513,15 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 4px;
+  padding: 8px 8px;
   border-top: 1px solid var(--border-sidebar);
+  border-radius: var(--radius-md);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.user-profile-bar:hover {
+  background: var(--bg-sidebar-hover);
 }
 
 .user-avatar {
@@ -1433,6 +1446,59 @@ dialog::backdrop {
   font-size: 20px;
   color: var(--text-muted);
   cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.btn-close-modal:hover {
+  color: var(--text-main);
+  background: #f1f5f9;
+}
+
+/* WORKSPACE CHOICE CARDS */
+.ws-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ws-choice-card:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+  transform: translateY(-1px);
+}
+
+.ws-choice-card.active {
+  border-color: #059669;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 1px #059669;
+}
+
+/* HEADER PROFILE BUTTON */
+.btn-profile-header {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-profile-header:hover {
+  transform: scale(1.08);
+  opacity: 0.9;
+}
+
+/* SYNC BUTTON ANIMATION */
+.btn-header-action.spinning svg {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* FOOTER */

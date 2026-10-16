@@ -119,8 +119,18 @@ function showWorkspace() {
   $("login-panel").hidden = true;
   $("workspace").hidden = false;
   if (state.user) {
-    $("user-display-name").textContent = state.user.full_name || state.user.email.split("@")[0];
-    $("user-display-role").textContent = (state.user.role || "Admin").replace("_", " ").toUpperCase();
+    const displayName = state.user.full_name || state.user.email.split("@")[0];
+    const roleText = (state.user.role || "Admin").replace("_", " ").toUpperCase();
+    const initial = (displayName.charAt(0) || "A").toUpperCase();
+
+    if ($("user-display-name")) $("user-display-name").textContent = displayName;
+    if ($("user-display-role")) $("user-display-role").textContent = roleText;
+    if ($("sidebar-user-avatar")) $("sidebar-user-avatar").textContent = initial;
+    if ($("header-user-avatar")) $("header-user-avatar").textContent = initial;
+    if ($("modal-user-avatar")) $("modal-user-avatar").textContent = initial;
+    if ($("modal-user-name")) $("modal-user-name").textContent = displayName;
+    if ($("modal-user-email")) $("modal-user-email").textContent = state.user.email || "admin@example.com";
+    if ($("modal-user-role-badge")) $("modal-user-role-badge").textContent = roleText;
   }
 }
 
@@ -153,24 +163,26 @@ async function loginWithCredentials(email, password) {
 // -------------------------------------------------------------
 async function refreshData() {
   try {
-    const [summary, txData, excData, batches, auditLogs] = await Promise.all([
+    const [summary, txData, excData, batches, auditData] = await Promise.all([
       api("/api/dashboard/summary").catch(() => null),
       api("/api/reconciliations?limit=500").catch(() => ({ items: [] })),
       api("/api/exceptions?limit=500").catch(() => ({ items: [] })),
       api("/api/batches").catch(() => []),
-      api("/api/audit-logs?limit=200").catch(() => []),
+      api("/api/audit-logs?limit=500").catch(() => ({ items: [], total: 0 })),
     ]);
 
     state.data = {
       summary,
-      transactions: txData.items || [],
-      exceptions: excData.items || [],
-      batches: batches || [],
-      auditLogs: auditLogs || [],
+      transactions: (txData && txData.items) ? txData.items : (Array.isArray(txData) ? txData : []),
+      exceptions: (excData && excData.items) ? excData.items : (Array.isArray(excData) ? excData : []),
+      batches: Array.isArray(batches) ? batches : [],
+      auditLogs: (auditData && auditData.items) ? auditData.items : (Array.isArray(auditData) ? auditData : []),
+      auditTotal: (auditData && typeof auditData.total === "number") ? auditData.total : ((auditData && auditData.items) ? auditData.items.length : 0),
     };
 
     renderAllViews();
   } catch (err) {
+    console.error("Failed to sync workspace ledger:", err);
     notice("Failed to sync latest workspace ledger.", true);
   }
 }
@@ -283,7 +295,9 @@ function renderOverview() {
 
 function renderTransactions() {
   const tbody = $("tx-table-body");
-  const records = state.data.transactions;
+  if (!tbody) return;
+  const rawTx = state.data.transactions;
+  const records = Array.isArray(rawTx) ? rawTx : (Array.isArray(rawTx?.items) ? rawTx.items : []);
   const searchVal = ($("tx-search-input")?.value || "").toLowerCase();
   const statusFilter = $("tx-filter-status")?.value || "";
 
@@ -341,7 +355,9 @@ function renderTransactions() {
 
 function renderExceptions() {
   const container = $("exceptions-card-container");
-  const exceptions = state.data.exceptions;
+  if (!container) return;
+  const rawExc = state.data.exceptions;
+  const exceptions = Array.isArray(rawExc) ? rawExc : (Array.isArray(rawExc?.items) ? rawExc.items : []);
   const statusFilter = $("exception-status")?.value || "";
   const severityFilter = $("exception-severity")?.value || "";
 
@@ -437,8 +453,10 @@ function renderBatches() {
 
 function renderAuditTrail() {
   const tbody = $("audit-table-body");
-  const logs = state.data.auditLogs;
-  const actorFilter = ($("audit-filter-actor")?.value || "").toLowerCase();
+  if (!tbody) return;
+  const rawLogs = state.data.auditLogs;
+  const logs = Array.isArray(rawLogs) ? rawLogs : (Array.isArray(rawLogs?.items) ? rawLogs.items : []);
+  const actorFilter = ($("audit-filter-actor")?.value || "").toLowerCase().trim();
 
   const filtered = logs.filter(l => {
     if (actorFilter && !(l.actor || "").toLowerCase().includes(actorFilter)) return false;
@@ -446,7 +464,10 @@ function renderAuditTrail() {
   });
 
   const countBadge = $("audit-count-badge");
-  if (countBadge) countBadge.textContent = `🕒 ${filtered.length} events`;
+  if (countBadge) {
+    const displayCount = actorFilter ? filtered.length : (state.data.auditTotal || filtered.length);
+    countBadge.textContent = `🕒 ${displayCount.toLocaleString()} events`;
+  }
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No audit events found.</td></tr>`;
@@ -462,8 +483,8 @@ function renderAuditTrail() {
         </div>
       </td>
       <td style="color: var(--text-muted); font-size: 13px;">${escapeHtml(l.actor || 'System')}</td>
-      <td style="font-family: monospace; font-size: 12px; color: #0d3632;">${escapeHtml(l.entity_type)} #${escapeHtml(l.entity_id || '')}</td>
-      <td style="font-size: 12.5px; color: var(--text-muted);">${escapeHtml(l.old_value || '')} → <strong style="color: var(--text-main);">${escapeHtml(l.new_value || '')}</strong></td>
+      <td style="font-family: monospace; font-size: 12px; color: #0d3632;">${escapeHtml(l.entity_type || 'SYSTEM')} #${escapeHtml(l.entity_id || '')}</td>
+      <td style="font-size: 12.5px; color: var(--text-muted);">${escapeHtml(l.old_value || '—')} → <strong style="color: var(--text-main);">${escapeHtml(l.new_value || '—')}</strong></td>
       <td style="font-size: 12.5px; color: var(--text-muted);">${escapeHtml(l.reason || '—')}</td>
       <td style="color: var(--text-dim); font-size: 12px;">${formatRelativeTime(l.timestamp)}</td>
     </tr>
@@ -545,13 +566,86 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Refresh Sync Button
-  $("refresh")?.addEventListener("click", () => {
+  $("refresh")?.addEventListener("click", async () => {
+    const btn = $("refresh");
+    btn?.classList.add("spinning");
     notice("Syncing with live ledger…");
-    refreshData();
+    try {
+      await refreshData();
+      notice("Workspace ledger synchronized successfully.");
+    } catch (e) {
+      notice("Failed to sync ledger.", true);
+    } finally {
+      setTimeout(() => btn?.classList.remove("spinning"), 500);
+    }
+  });
+
+  // User Profile Modal Handlers
+  $("sidebar-profile-btn")?.addEventListener("click", (e) => {
+    if (e.target.closest("#logout")) return;
+    $("profile-dialog")?.showModal();
+  });
+
+  $("header-profile-btn")?.addEventListener("click", () => {
+    $("profile-dialog")?.showModal();
+  });
+
+  $("close-profile")?.addEventListener("click", () => $("profile-dialog")?.close());
+  $("btn-close-profile-action")?.addEventListener("click", () => $("profile-dialog")?.close());
+
+  $("modal-logout-btn")?.addEventListener("click", () => {
+    $("profile-dialog")?.close();
+    logout();
+    notice("Signed out safely.");
+  });
+
+  // Workspace Switcher Modal Handlers
+  $("workspace-select-btn")?.addEventListener("click", () => {
+    $("workspace-dialog")?.showModal();
+  });
+
+  $("close-workspace")?.addEventListener("click", () => $("workspace-dialog")?.close());
+
+  document.querySelectorAll(".ws-choice-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const name = card.dataset.wsName || "Northstar Retail";
+      const sub = card.dataset.wsSub || "Finance workspace";
+      const avatar = card.dataset.wsAvatar || "N";
+
+      document.querySelectorAll(".ws-choice-card").forEach(c => {
+        c.classList.remove("active");
+        const b = c.querySelector(".badge");
+        if (b) {
+          b.className = "badge badge-neutral";
+          b.textContent = "Select";
+        }
+      });
+      card.classList.add("active");
+      const badge = card.querySelector(".badge");
+      if (badge) {
+        badge.className = "badge badge-green";
+        badge.textContent = "Active";
+      }
+
+      if ($("ws-name-display")) $("ws-name-display").textContent = name;
+      if ($("ws-sub-display")) $("ws-sub-display").textContent = sub;
+      if ($("ws-avatar-badge")) {
+        $("ws-avatar-badge").textContent = avatar;
+        if (avatar === "A") $("ws-avatar-badge").style.background = "#2563eb";
+        else if (avatar === "M") $("ws-avatar-badge").style.background = "#7c3aed";
+        else $("ws-avatar-badge").style.background = "rgba(255, 255, 255, 0.15)";
+      }
+      if ($("breadcrumb-ws-name")) $("breadcrumb-ws-name").textContent = name;
+      if ($("modal-user-ws")) $("modal-user-ws").textContent = name;
+
+      $("workspace-dialog")?.close();
+      notice(`Switched workspace to ${name}.`);
+    });
   });
 
   // Logout Button
-  $("logout")?.addEventListener("click", () => {
+  $("logout")?.addEventListener("click", (e) => {
+    e.stopPropagation();
     logout();
     notice("Signed out safely.");
   });
