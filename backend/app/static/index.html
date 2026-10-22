@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ledger/ops — Autonomous Financial Reconciliation</title>
+  <title>ledger/ops — AI Finance Controller &amp; Autonomous Financial Reconciliation</title>
+  <meta name="description" content="AI Finance Controller - Autonomous financial reconciliation platform.">
   <link rel="stylesheet" href="/styles.css?v=2.4">
   <script src="/app.js?v=2.4" defer></script>
 </head>
@@ -466,8 +467,10 @@
             </select>
           </div>
 
-          <div class="exception-card-list" id="exceptions-card-container">
-            <!-- Injected via JS -->
+          <div id="exception-table" class="exception-card-list-wrapper">
+            <div class="exception-card-list" id="exceptions-card-container">
+              <!-- Injected via JS -->
+            </div>
           </div>
         </section>
 
@@ -705,7 +708,7 @@
           </div>
 
           <div class="table-wrap">
-            <table>
+            <table id="audit-table">
               <thead>
                 <tr>
                   <th>Event</th>
